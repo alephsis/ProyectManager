@@ -1,0 +1,92 @@
+<?xml version='1.0' encoding='UTF-8' ?>
+    
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:p="http://www.springframework.org/schema/p"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+                           http://www.springframework.org/schema/beans/spring-beans-4.3.xsd" >
+    <bean class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer"
+        p:location="/WEB-INF/database.properties"/>
+
+    <!--<bean id="propertyConfigurer"
+          class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
+          <property name="location">
+              <value>/WEB-INF/database.properties</value>
+          </property>
+    </bean>-->
+   
+    <bean id="dataSource" class="org.springframework.jdbc.datasource.DriverManagerDataSource"
+        p:driverClassName="${jdbc.driverClassName}"
+        p:url="${jdbc.url}"
+        p:username="${jdbc.username}"
+        p:password="${jdbc.password}"/>
+    
+    <bean id="hibernate4AnnotatedSessionFactory"
+          class="org.springframework.orm.hibernate4.LocalSessionFactoryBean">
+        <property name="dataSource" ref="dataSource"/>
+        <property name="annotatedClasses">
+            <list>
+                <value>entity.CasousoPostcondiciones</value>
+                <value>entity.CasousoActor</value>
+                <value>entity.Casouso</value>
+                <value>entity.CasousoRequisitosEspeciales</value>
+                <value>entity.Proyecto</value>
+                <value>entity.Usuario</value>
+                <value>entity.Accion</value>
+                <value>entity.CasousoPrecondiciones</value>
+            </list>                
+        </property>
+        <property name="hibernateProperties">
+            <props>
+                <prop key="hibernate.dialect">org.hibernate.dialect.MySQLDialect</prop>
+                <prop key="hibernate.show_sql">true</prop>
+                <prop key="hibernate.format_sql">false</prop>
+            </props>
+        </property>
+    </bean>
+    
+    <!-- Se agregan estos frijoles para ser inyectados en los controladores -->
+    <bean id="UserModel" class="model.UserModel" p:sessionFactory-ref="hibernate4AnnotatedSessionFactory" />
+    <bean id="ProjectModel" class="model.ProjectModel" p:sessionFactory-ref="hibernate4AnnotatedSessionFactory" />
+    
+    <beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:p="http://www.springframework.org/schema/p"
+       xmlns:security="http://www.springframework.org/schema/security"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+                           http://www.springframework.org/schema/beans/spring-beans-4.3.xsd
+                           http://www.springframework.org/schema/security
+                           http://www.springframework.org/schema/security/spring-security-4.1.xsd">
+    
+    
+     <!-- SpringSecurity-->
+    <security:http pattern="/css/*" security="none"/>
+    <security:http pattern="/imagenes/*" security="none"/>
+    <security:http pattern="/js/*" security="none"/>   
+    
+    <security:http use-expressions="true">
+        <security:intercept-url pattern="/home/agregarUsuario/**" access="hasRole('ROLE_ADMINISTRADOR')" />
+        <security:intercept-url pattern="/home/**" access="hasAnyRole('ROLE_USUARIO','ROLE_ADMINISTRADOR','ROLE_ANALISTA')"/>
+        <security:intercept-url pattern="/" access="permitAll"/>
+  
+        <!--security:logout logout-url="/home/salir" logout-success-url="/?salir"/-->
+        <security:headers />
+        <security:form-login login-page="/"
+                             default-target-url="/home"
+                             login-processing-url="/home/iniciarsesion"
+                             password-parameter="contrasena"
+                             username-parameter="usuario"
+                             authentication-failure-url="/?error"
+                             />
+        <security:csrf disabled="true"/>
+        <security:access-denied-handler error-page="/error403" />
+        <security:logout logout-success-url="/"
+                         delete-cookies="JSESSIONID"/>
+    
+        
+    </security:http> 
+     <security:authentication-manager alias="authenticationManager">
+        <security:authentication-provider user-service-ref="UserModel" />
+    </security:authentication-manager>
+    </beans>        
+</beans>
